@@ -70,7 +70,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            {% if transactions %}
+                            {% if recent_transactions %}
                             <table class="table table-striped">
                                 <thead>
                                     <tr>
@@ -81,7 +81,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for tx in transactions %}
+                                    {% for tx in recent_transactions %}
                                     <tr>
                                         <td>{{ tx.timestamp.split('T')[0] if 'T' in tx.timestamp else tx.timestamp }}</td>
                                         <td>{{ tx.amount }} EUR</td>

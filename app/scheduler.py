@@ -40,6 +40,38 @@ def init_scheduler():
         logger.error(f"Failed to initialize scheduler: {str(e)}")
         raise
 
+def update_scheduler():
+    """Update the scheduler with new settings"""
+    try:
+        # Only update if the scheduler is running
+        if scheduler.running:
+            logger.info("Updating scheduler with new settings")
+            
+            # Parse buy time from config (format: HH:MM)
+            hour, minute = config.BUY_TIME.split(':')
+            
+            # Create a new trigger with updated time
+            trigger = CronTrigger(
+                hour=hour,
+                minute=minute,
+                timezone='UTC'
+            )
+            
+            # Reschedule the job with the new trigger
+            scheduler.reschedule_job(
+                'daily_buy_job',
+                trigger=trigger
+            )
+            
+            logger.info(f"Scheduler updated: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+            return True
+        else:
+            logger.warning("Scheduler is not running, cannot update")
+            return False
+    except Exception as e:
+        logger.error(f"Failed to update scheduler: {str(e)}")
+        raise
+
 def get_next_run_time():
     """Get the next scheduled run time for the daily buy job"""
     try:
@@ -60,3 +92,4 @@ def manual_buy():
     except Exception as e:
         logger.error(f"Manual buy failed: {str(e)}")
         raise
+
