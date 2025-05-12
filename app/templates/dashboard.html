@@ -59,7 +59,11 @@
                         <p>{{ next_buy_time or 'Not scheduled' }}</p>
                         
                         <h5>Trading Settings</h5>
+                        {% if order_frequency == 'weekly' %}
+                        <p>Weekly buy: {{ daily_amount }} EUR of {{ product_id }} every {{ weekly_day.capitalize() }}</p>
+                        {% else %}
                         <p>Daily buy: {{ daily_amount }} EUR of {{ product_id }}</p>
+                        {% endif %}
                         
                         <button id="manual-buy-btn" class="btn btn-primary">Execute Buy Now</button>
                         <div id="manual-buy-result" class="mt-3"></div>

@@ -11,31 +11,61 @@ logger = logging.getLogger('coinbase_app.scheduler')
 # Initialize the scheduler
 scheduler = BackgroundScheduler()
 
-def init_scheduler():
-    """Initialize and start the scheduler for daily buys"""
-    try:
-        # Parse buy time from config (format: HH:MM)
-        hour, minute = config.BUY_TIME.split(':')
-        
+def get_cron_trigger():
+    """Create a cron trigger based on current frequency settings"""
+    # Parse buy time from config (format: HH:MM)
+    hour, minute = config.BUY_TIME.split(':')
+    
+    if config.ORDER_FREQUENCY == 'daily':
         # Create a cron trigger to execute daily at the specified time (UTC)
-        trigger = CronTrigger(
+        return CronTrigger(
             hour=hour,
             minute=minute,
             timezone='UTC'
         )
+    else:  # weekly
+        # Get day of week (0-6 where 0=Monday)
+        day_of_week_map = {
+            'monday': 0,
+            'tuesday': 1,
+            'wednesday': 2,
+            'thursday': 3,
+            'friday': 4,
+            'saturday': 5,
+            'sunday': 6
+        }
+        day_of_week = day_of_week_map.get(config.WEEKLY_DAY.lower(), 0)  # Default to Monday (0)
+        
+        # Create a cron trigger to execute weekly on the specified day and time (UTC)
+        return CronTrigger(
+            day_of_week=day_of_week,
+            hour=hour,
+            minute=minute,
+            timezone='UTC'
+        )
+
+def init_scheduler():
+    """Initialize and start the scheduler for buys"""
+    try:
+        # Create a trigger based on current frequency settings
+        trigger = get_cron_trigger()
         
         # Add the job to the scheduler
         scheduler.add_job(
             func=execute_daily_buy,
             trigger=trigger,
-            id='daily_buy_job',
-            name='Execute daily BTC-EUR buy',
+            id='buy_job',
+            name=f'Execute {config.ORDER_FREQUENCY} {config.PRODUCT_ID} buy',
             replace_existing=True
         )
         
         # Start the scheduler
         scheduler.start()
-        logger.info(f"Scheduler started: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+        
+        if config.ORDER_FREQUENCY == 'daily':
+            logger.info(f"Scheduler started: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+        else:
+            logger.info(f"Scheduler started: Weekly buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
     except Exception as e:
         logger.error(f"Failed to initialize scheduler: {str(e)}")
         raise
@@ -47,23 +77,24 @@ def update_scheduler():
         if scheduler.running:
             logger.info("Updating scheduler with new settings")
             
-            # Parse buy time from config (format: HH:MM)
-            hour, minute = config.BUY_TIME.split(':')
+            # Create a new trigger based on current frequency settings
+            trigger = get_cron_trigger()
             
-            # Create a new trigger with updated time
-            trigger = CronTrigger(
-                hour=hour,
-                minute=minute,
-                timezone='UTC'
-            )
+            # Update job name based on frequency
+            job = scheduler.get_job('buy_job')
+            if job:
+                job.name = f'Execute {config.ORDER_FREQUENCY} {config.PRODUCT_ID} buy'
             
             # Reschedule the job with the new trigger
             scheduler.reschedule_job(
-                'daily_buy_job',
+                'buy_job',
                 trigger=trigger
             )
             
-            logger.info(f"Scheduler updated: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+            if config.ORDER_FREQUENCY == 'daily':
+                logger.info(f"Scheduler updated: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+            else:
+                logger.info(f"Scheduler updated: Weekly buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
             return True
         else:
             logger.warning("Scheduler is not running, cannot update")
@@ -73,9 +104,9 @@ def update_scheduler():
         raise
 
 def get_next_run_time():
-    """Get the next scheduled run time for the daily buy job"""
+    """Get the next scheduled run time for the buy job"""
     try:
-        job = scheduler.get_job('daily_buy_job')
+        job = scheduler.get_job('buy_job')
         if job and job.next_run_time:
             return job.next_run_time.isoformat()
         return None

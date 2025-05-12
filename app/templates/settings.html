@@ -59,21 +59,61 @@
                                 <div class="form-text">The cryptocurrency pair to trade (e.g., BTC-EUR)</div>
                             </div>
                             <div class="mb-3">
-                                <label for="daily_amount" class="form-label">Daily Amount (EUR)</label>
+                                <label for="daily_amount" class="form-label">Amount (EUR)</label>
                                 <input type="number" class="form-control" id="daily_amount" name="daily_amount" value="{{ daily_amount }}" step="0.01" min="1" required>
-                                <div class="form-text">The amount in EUR to buy each day</div>
+                                <div class="form-text">The amount in EUR to buy on each order</div>
                             </div>
                             <div class="mb-3">
-                                <label for="buy_time" class="form-label">Buy Time (UTC)</label>
+                                <label for="buy_time" class="form-label">Time (UTC)</label>
                                 <input type="text" class="form-control" id="buy_time" name="buy_time" value="{{ buy_time }}" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" placeholder="HH:MM" required>
-                                <div class="form-text">The time to execute the daily buy (in UTC format, e.g., 08:00)</div>
+                                <div class="form-text">The time to execute the order (in UTC format, e.g., 08:00)</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Order Frequency</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="order_frequency" id="frequency_daily" value="daily" {% if order_frequency == 'daily' %}checked{% endif %} onchange="toggleWeeklyOptions()">
+                                    <label class="form-check-label" for="frequency_daily">
+                                        Daily
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="order_frequency" id="frequency_weekly" value="weekly" {% if order_frequency == 'weekly' %}checked{% endif %} onchange="toggleWeeklyOptions()">
+                                    <label class="form-check-label" for="frequency_weekly">
+                                        Weekly
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="weekly_options" class="mb-3" {% if order_frequency != 'weekly' %}style="display: none;"{% endif %}>
+                                <label for="weekly_day" class="form-label">Day of Week</label>
+                                <select class="form-select" id="weekly_day" name="weekly_day">
+                                    <option value="monday" {% if weekly_day == 'monday' %}selected{% endif %}>Monday</option>
+                                    <option value="tuesday" {% if weekly_day == 'tuesday' %}selected{% endif %}>Tuesday</option>
+                                    <option value="wednesday" {% if weekly_day == 'wednesday' %}selected{% endif %}>Wednesday</option>
+                                    <option value="thursday" {% if weekly_day == 'thursday' %}selected{% endif %}>Thursday</option>
+                                    <option value="friday" {% if weekly_day == 'friday' %}selected{% endif %}>Friday</option>
+                                    <option value="saturday" {% if weekly_day == 'saturday' %}selected{% endif %}>Saturday</option>
+                                    <option value="sunday" {% if weekly_day == 'sunday' %}selected{% endif %}>Sunday</option>
+                                </select>
                             </div>
                             <div class="alert alert-info">
                                 <h5>Important:</h5>
-                                <p>Changes to these settings will take effect immediately. The scheduler will be updated with the new time and amount values.</p>
+                                <p>Changes to these settings will take effect immediately. The scheduler will be updated with the new time, frequency, and amount values.</p>
                             </div>
                             <button type="submit" class="btn btn-primary">Save Settings</button>
                         </form>
+                        
+                        <script>
+                            function toggleWeeklyOptions() {
+                                const weeklyOptions = document.getElementById('weekly_options');
+                                const isWeekly = document.getElementById('frequency_weekly').checked;
+                                
+                                if (isWeekly) {
+                                    weeklyOptions.style.display = 'block';
+                                } else {
+                                    weeklyOptions.style.display = 'none';
+                                }
+                            }
+                        </script>
                     </div>
                 </div>
                 

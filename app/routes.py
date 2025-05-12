@@ -31,7 +31,9 @@ def index():
                           logged_in=session.get('logged_in', False),
                           next_buy_time=get_next_run_time(),
                           product_id=config.PRODUCT_ID,
-                          daily_amount=config.DAILY_AMOUNT)
+                          daily_amount=config.DAILY_AMOUNT,
+                          order_frequency=config.ORDER_FREQUENCY,
+                          weekly_day=config.WEEKLY_DAY)
 
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -74,7 +76,9 @@ def dashboard():
                           recent_transactions=recent_transactions,  # For Recent Activity
                           next_buy_time=next_buy_time,
                           product_id=config.PRODUCT_ID,
-                          daily_amount=config.DAILY_AMOUNT)
+                          daily_amount=config.DAILY_AMOUNT,
+                          order_frequency=config.ORDER_FREQUENCY,
+                          weekly_day=config.WEEKLY_DAY)
 
 @main_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -88,19 +92,26 @@ def settings():
             product_id = request.form.get('product_id')
             daily_amount = request.form.get('daily_amount')
             buy_time = request.form.get('buy_time')
+            order_frequency = request.form.get('order_frequency')
+            weekly_day = request.form.get('weekly_day')
             
             # Update configuration
             updated = config.update_settings(
                 new_product_id=product_id,
                 new_daily_amount=daily_amount,
-                new_buy_time=buy_time
+                new_buy_time=buy_time,
+                new_order_frequency=order_frequency,
+                new_weekly_day=weekly_day
             )
             
             if updated:
                 # Update the scheduler with new settings
                 update_scheduler()
                 flash('Settings updated successfully', 'success')
-                logger.info(f"Settings updated: Product ID={config.PRODUCT_ID}, Daily Amount={config.DAILY_AMOUNT}, Buy Time={config.BUY_TIME}")
+                logger.info(f"Settings updated: Product ID={config.PRODUCT_ID}, Daily Amount={config.DAILY_AMOUNT}, "
+                           f"Buy Time={config.BUY_TIME}, Frequency={config.ORDER_FREQUENCY}")
+                if config.ORDER_FREQUENCY == 'weekly':
+                    logger.info(f"Weekly day set to: {config.WEEKLY_DAY}")
             else:
                 flash('No changes detected', 'info')
                 
@@ -117,6 +128,8 @@ def settings():
                           product_id=config.PRODUCT_ID,
                           daily_amount=config.DAILY_AMOUNT,
                           buy_time=config.BUY_TIME,
+                          order_frequency=config.ORDER_FREQUENCY,
+                          weekly_day=config.WEEKLY_DAY,
                           error=error)
 
 # NEW ROUTES FOR TRANSACTIONS VIEW

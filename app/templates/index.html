@@ -53,7 +53,11 @@
 
         <div class="jumbotron">
             <h1 class="display-4">Coinbase Automated Trader</h1>
+            {% if order_frequency == 'weekly' %}
+            <p class="lead">Automated weekly purchases of {{ product_id }} for {{ daily_amount }} EUR every {{ weekly_day.capitalize() }}</p>
+            {% else %}
             <p class="lead">Automated daily purchases of {{ product_id }} for {{ daily_amount }} EUR</p>
+            {% endif %}
             <hr class="my-4">
             <p>Next scheduled buy: {{ next_buy_time or 'Not scheduled' }}</p>
             {% if not logged_in %}
