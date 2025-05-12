@@ -3,7 +3,10 @@ from functools import wraps
 import logging
 import traceback
 from app import config
-from app.trading import get_account_balance, get_transaction_history, get_client
+from app.trading import (
+    get_account_balance, get_transaction_history, get_client,
+    get_coinbase_transactions, get_transaction_by_id
+)
 from app.scheduler import get_next_run_time, manual_buy, update_scheduler
 
 # Set up logging
@@ -116,6 +119,54 @@ def settings():
                           buy_time=config.BUY_TIME,
                           error=error)
 
+# NEW ROUTES FOR TRANSACTIONS VIEW
+
+@main_bp.route('/transactions')
+@login_required
+def transactions():
+    """Transactions page - view all Coinbase transactions"""
+    try:
+        # Get page parameter from URL (default to 1)
+        page = request.args.get('page', 1, type=int)
+        
+        # Fetch transactions from Coinbase API
+        transactions_list, has_more = get_coinbase_transactions(page=page, limit=10)
+        
+        return render_template('transactions.html', 
+                              transactions=transactions_list,
+                              page=page,
+                              has_more=has_more)
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {str(e)}")
+        flash(f"Error loading transactions: {str(e)}", 'danger')
+        return render_template('transactions.html', transactions=[], page=1, has_more=False)
+
+@main_bp.route('/refresh-transactions')
+@login_required
+def refresh_transactions():
+    """Force refresh of transactions data"""
+    flash("Transactions have been refreshed", 'success')
+    return redirect(url_for('main.transactions'))
+
+@main_bp.route('/transaction/<order_id>')
+@login_required
+def transaction_detail(order_id):
+    """Transaction detail page - view details of a specific transaction"""
+    try:
+        # Fetch transaction details from Coinbase API
+        transaction = get_transaction_by_id(order_id)
+        
+        if not transaction:
+            flash("Transaction not found", 'warning')
+        
+        return render_template('transaction_detail.html', transaction=transaction)
+    except Exception as e:
+        logger.error(f"Error fetching transaction details: {str(e)}")
+        flash(f"Error loading transaction details: {str(e)}", 'danger')
+        return render_template('transaction_detail.html', transaction=None)
+
+# EXISTING API ENDPOINTS
+
 @main_bp.route('/api/manual-buy', methods=['POST'])
 @login_required
 def api_manual_buy():
@@ -143,6 +194,39 @@ def api_transactions():
     try:
         transactions = get_transaction_history()
         return jsonify({'success': True, 'transactions': transactions})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# NEW API ENDPOINT FOR COINBASE TRANSACTIONS
+
+@main_bp.route('/api/coinbase-transactions')
+@login_required
+def api_coinbase_transactions():
+    """API endpoint to get transactions directly from Coinbase"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        
+        transactions, has_more = get_coinbase_transactions(page=page, limit=limit)
+        return jsonify({
+            'success': True,
+            'transactions': transactions,
+            'page': page,
+            'has_more': has_more
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/transaction/<order_id>')
+@login_required
+def api_transaction_detail(order_id):
+    """API endpoint to get a specific transaction by ID"""
+    try:
+        transaction = get_transaction_by_id(order_id)
+        if transaction:
+            return jsonify({'success': True, 'transaction': transaction})
+        else:
+            return jsonify({'success': False, 'error': 'Transaction not found'}), 404
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
