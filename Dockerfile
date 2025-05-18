@@ -17,4 +17,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Run the application with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:create_app()", "--workers", "2", "--threads", "2", "--timeout", "120"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:create_app(init_sched=False)", "--workers", "2", "--threads", "2", "--timeout", "120"]

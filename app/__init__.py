@@ -3,7 +3,7 @@ from flask import Flask
 from app.scheduler import init_scheduler
 from dotenv import load_dotenv
 
-def create_app():
+def create_app(init_sched=False):
     # Load environment variables
     load_dotenv()
     
@@ -15,7 +15,9 @@ def create_app():
     from app.routes import main_bp
     app.register_blueprint(main_bp)
     
-    # Initialize scheduler for daily buys
-    init_scheduler()
+    # Only initialize scheduler if explicitly requested
+    # (it will run in a separate process in production)
+    if init_sched:
+        init_scheduler()
     
     return app
