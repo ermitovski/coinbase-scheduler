@@ -1,17 +1,6 @@
 version: '3'
 
 services:
-  web:
-    build: .
-    ports:
-      - "5002:5000"
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    restart: unless-stopped
-    command: gunicorn --bind 0.0.0.0:5000 "app:create_app(init_sched=False)" --workers 2 --threads 2 --timeout 120
-  
   scheduler:
     build: .
     volumes:
@@ -19,6 +8,4 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    command: python scheduler_process.py
-    depends_on:
-      - web
+    command: python coinbase_scheduler.py

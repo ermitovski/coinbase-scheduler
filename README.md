@@ -1,82 +1,87 @@
-# Coinbase Automated Trader
+# Coinbase Scheduler
 
-A Docker-based application with a web interface for automated daily purchases of cryptocurrencies on Coinbase.
+A simplified scheduler tool to execute recurring cryptocurrency purchases on Coinbase. This tool automates the process of buying a specified amount of cryptocurrency at regular intervals (daily or weekly).
 
 ## Features
 
-- Automated daily purchases of BTC-EUR (configurable)
-- Web interface to monitor transactions and account balance
-- Manual purchase capability
-- Secure storage of API credentials
-- Dockerized for easy deployment
+- Automated cryptocurrency purchasing on a daily or weekly schedule
+- Configurable purchase amount and timing
+- Support for any Coinbase-supported cryptocurrency pair
+- Command-line interface for manual operations
+- Docker support for easy deployment
 
 ## Setup
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Coinbase account with API access
-- API key and secret with trading permissions
+- Python 3.9+
+- Coinbase Advanced Trade API keys
 
 ### Installation
 
-1. Clone this repository:
+1. Clone the repository
+2. Install dependencies:
    ```
-   git clone <repository-url> /Users/xesteve/git/coinbase-app
-   cd /Users/xesteve/git/coinbase-app
+   pip install -r requirements.txt
    ```
-
-2. Create a `.env` file from the example:
+3. Copy the example environment file and configure it:
    ```
    cp .env.example .env
    ```
+4. Edit the `.env` file with your Coinbase API credentials and preferred purchase settings
 
-3. Edit the `.env` file with your Coinbase API credentials and preferences:
-   ```
-   # Coinbase API credentials
-   COINBASE_API_KEY=your-api-key
-   COINBASE_API_SECRET=your-api-secret
-   
-   # Trading settings
-   PRODUCT_ID=BTC-EUR
-   DAILY_AMOUNT=30
-   BUY_TIME=08:00
-   
-   # Flask settings
-   FLASK_SECRET_KEY=your-secret-key
-   FLASK_DEBUG=False
-   
-   # Admin credentials
-   ADMIN_USERNAME=admin
-   ADMIN_PASSWORD=your-secure-password
-   ```
+## Configuration
 
-4. Build and start the Docker container:
-   ```
-   docker-compose up -d
-   ```
+The application is configured through environment variables, which can be set in the `.env` file:
 
-5. Access the web interface at http://localhost:5000
+- `COINBASE_API_KEY`: Your Coinbase Advanced Trade API key
+- `COINBASE_API_SECRET`: Your Coinbase Advanced Trade API secret
+- `PRODUCT_ID`: The cryptocurrency pair to trade (e.g., `BTC-EUR`)
+- `DAILY_AMOUNT`: The amount of fiat currency to use for each purchase
+- `BUY_TIME`: The time to execute purchases (in UTC, format: HH:MM)
+- `ORDER_FREQUENCY`: Frequency of purchases (`daily` or `weekly`)
+- `WEEKLY_DAY`: Day of the week for weekly purchases (`monday`, `tuesday`, etc.)
 
 ## Usage
 
-1. Log in to the dashboard using your admin credentials
-2. View your current balance and transaction history
-3. Modify settings if needed
-4. Use the "Execute Buy Now" button to manually trigger a purchase
+### Running the Scheduler
 
-## Security
-
-- API credentials are stored only in the `.env` file and are not exposed in the web interface
-- All sensitive operations require authentication
-- The application runs in a Docker container for isolation
-
-## Development
-
-To run the application in development mode:
+To start the scheduler and keep it running in the background:
 
 ```
-docker-compose up
+python coinbase_scheduler.py
+```
+
+### Manual Operations
+
+Execute a one-time purchase:
+
+```
+python coinbase_scheduler.py --buy-now
+```
+
+Show current configuration:
+
+```
+python coinbase_scheduler.py --show-config
+```
+
+## Docker Deployment
+
+Build and run using Docker Compose:
+
+```
+docker-compose up -d
+```
+
+This will start the scheduler in a Docker container.
+
+## Logging
+
+Logs are output to the console, and can be redirected to a file if needed:
+
+```
+python coinbase_scheduler.py > coinbase_scheduler.log 2>&1
 ```
 
 ## License

@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv, find_dotenv, set_key
 
 # Set up logging
-logger = logging.getLogger('coinbase_app.config')
+logger = logging.getLogger('coinbase_scheduler.config')
 
 # Load environment variables
 dotenv_path = find_dotenv()
@@ -19,10 +19,6 @@ DAILY_AMOUNT = float(os.getenv('DAILY_AMOUNT', '30'))
 BUY_TIME = os.getenv('BUY_TIME', '08:00')  # UTC time
 ORDER_FREQUENCY = os.getenv('ORDER_FREQUENCY', 'daily')  # 'daily' or 'weekly'
 WEEKLY_DAY = os.getenv('WEEKLY_DAY', 'monday')  # Day of the week for weekly orders
-
-# Admin credentials
-ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'password')
 
 def validate_config():
     """Validate that all required configuration is present"""

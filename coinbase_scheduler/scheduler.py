@@ -2,11 +2,11 @@ import logging
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from app import config
-from app.trading import execute_daily_buy
+from coinbase_scheduler import config
+from coinbase_scheduler.trading import execute_daily_buy
 
 # Set up logging
-logger = logging.getLogger('coinbase_app.scheduler')
+logger = logging.getLogger('coinbase_scheduler.scheduler')
 
 # Initialize the scheduler
 scheduler = BackgroundScheduler()
@@ -123,4 +123,3 @@ def manual_buy():
     except Exception as e:
         logger.error(f"Manual buy failed: {str(e)}")
         raise
-

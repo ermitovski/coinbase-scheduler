@@ -9,12 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Expose the application port
-EXPOSE 5000
-
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Run the application with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:create_app(init_sched=False)", "--workers", "2", "--threads", "2", "--timeout", "120"]
+# Run the scheduler
+CMD ["python", "coinbase_scheduler.py"]
