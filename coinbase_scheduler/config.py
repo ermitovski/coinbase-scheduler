@@ -20,6 +20,11 @@ BUY_TIME = os.getenv('BUY_TIME', '08:00')  # UTC time
 ORDER_FREQUENCY = os.getenv('ORDER_FREQUENCY', 'daily')  # 'daily' or 'weekly'
 WEEKLY_DAY = os.getenv('WEEKLY_DAY', 'monday')  # Day of the week for weekly orders
 
+# Telegram settings
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+TELEGRAM_NOTIFICATIONS_ENABLED = os.getenv('TELEGRAM_NOTIFICATIONS_ENABLED', 'true').lower() == 'true'
+
 def validate_config():
     """Validate that all required configuration is present"""
     if not COINBASE_API_KEY or not COINBASE_API_SECRET:
@@ -30,11 +35,19 @@ def validate_config():
     
     if not DAILY_AMOUNT or DAILY_AMOUNT <= 0:
         raise ValueError('Daily amount must be greater than 0')
+    
+    # Check Telegram configuration if notifications are enabled
+    if TELEGRAM_NOTIFICATIONS_ENABLED:
+        if not TELEGRAM_BOT_TOKEN:
+            logger.warning('Telegram notifications are enabled but bot token is missing')
+        if not TELEGRAM_CHAT_ID:
+            logger.warning('Telegram notifications are enabled but chat ID is missing')
 
 def update_settings(new_product_id=None, new_daily_amount=None, new_buy_time=None, 
-                new_order_frequency=None, new_weekly_day=None):
+                new_order_frequency=None, new_weekly_day=None, new_telegram_enabled=None, 
+                new_telegram_bot_token=None, new_telegram_chat_id=None):
     """Update the application settings and save to .env file"""
-    global PRODUCT_ID, DAILY_AMOUNT, BUY_TIME, ORDER_FREQUENCY, WEEKLY_DAY
+    global PRODUCT_ID, DAILY_AMOUNT, BUY_TIME, ORDER_FREQUENCY, WEEKLY_DAY, TELEGRAM_NOTIFICATIONS_ENABLED, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     
     updated = False
     
@@ -92,6 +105,33 @@ def update_settings(new_product_id=None, new_daily_amount=None, new_buy_time=Non
         logger.info(f"Updating weekly day from {WEEKLY_DAY} to {new_weekly_day}")
         WEEKLY_DAY = new_weekly_day
         set_key(dotenv_path, 'WEEKLY_DAY', new_weekly_day)
+        updated = True
+    
+    # Update Telegram notification enabled if provided
+    if new_telegram_enabled is not None:
+        try:
+            new_enabled = str(new_telegram_enabled).lower() == 'true'
+            if new_enabled != TELEGRAM_NOTIFICATIONS_ENABLED:
+                logger.info(f"Updating Telegram notifications enabled from {TELEGRAM_NOTIFICATIONS_ENABLED} to {new_enabled}")
+                TELEGRAM_NOTIFICATIONS_ENABLED = new_enabled
+                set_key(dotenv_path, 'TELEGRAM_NOTIFICATIONS_ENABLED', str(new_enabled).lower())
+                updated = True
+        except Exception as e:
+            logger.error(f"Invalid Telegram notifications enabled value: {new_telegram_enabled}")
+            raise ValueError("Telegram notifications enabled must be a boolean")
+    
+    # Update Telegram bot token if provided
+    if new_telegram_bot_token and new_telegram_bot_token != TELEGRAM_BOT_TOKEN:
+        logger.info("Updating Telegram bot token")
+        TELEGRAM_BOT_TOKEN = new_telegram_bot_token
+        set_key(dotenv_path, 'TELEGRAM_BOT_TOKEN', new_telegram_bot_token)
+        updated = True
+    
+    # Update Telegram chat ID if provided
+    if new_telegram_chat_id and new_telegram_chat_id != TELEGRAM_CHAT_ID:
+        logger.info("Updating Telegram chat ID")
+        TELEGRAM_CHAT_ID = new_telegram_chat_id
+        set_key(dotenv_path, 'TELEGRAM_CHAT_ID', new_telegram_chat_id)
         updated = True
     
     return updated

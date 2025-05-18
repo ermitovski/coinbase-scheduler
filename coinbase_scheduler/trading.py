@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from coinbase_advanced_trader.enhanced_rest_client import EnhancedRESTClient
 from coinbase_scheduler import config
+from coinbase_scheduler.notifications import send_order_notification
 
 # Set up logging
 logging.basicConfig(
@@ -64,6 +65,9 @@ def execute_daily_buy():
         }
         transaction_history.append(transaction)
         
+        # Send notification
+        send_order_notification(transaction)
+        
         logger.info(f"Successfully placed buy order for {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID}")
         return transaction
     except Exception as e:
@@ -81,6 +85,9 @@ def execute_daily_buy():
             'error': str(e)
         }
         transaction_history.append(transaction)
+        
+        # Send notification for failed order
+        send_order_notification(transaction)
         
         return transaction
 

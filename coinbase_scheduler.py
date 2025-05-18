@@ -19,6 +19,7 @@ load_dotenv()
 # Import scheduler components
 from coinbase_scheduler.scheduler import scheduler, init_scheduler, manual_buy
 from coinbase_scheduler import config
+from coinbase_scheduler.notifications import send_startup_notification
 
 # Signal handler for graceful shutdown
 def handle_shutdown(signum, frame):
@@ -50,6 +51,9 @@ def run_scheduler():
             logger.info(f"Schedule: Daily at {config.BUY_TIME} UTC")
         else:
             logger.info(f"Schedule: Weekly on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
+        
+        # Send startup notification
+        send_startup_notification(config)
         
         # Keep the process running until a signal is received
         while True:
@@ -100,6 +104,10 @@ def main():
         print(f"Frequency: {config.ORDER_FREQUENCY}")
         if config.ORDER_FREQUENCY == 'weekly':
             print(f"Weekly Day: {config.WEEKLY_DAY.capitalize()}")
+        
+        # Send configuration as Telegram notification
+        send_startup_notification(config)
+        
         return 0
         
     # Execute single buy if requested
