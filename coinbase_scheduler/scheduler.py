@@ -114,10 +114,18 @@ def get_next_run_time():
         logger.error(f"Failed to get next run time: {str(e)}")
         return None
 
-def manual_buy():
-    """Manually trigger a buy operation"""
+def manual_buy(amount=None):
+    """
+    Manually trigger a buy operation
+    
+    Args:
+        amount (float, optional): Custom amount to use for this buy. Defaults to None.
+        
+    Returns:
+        dict: Result of the buy operation
+    """
     try:
-        result = execute_daily_buy()
+        result = execute_daily_buy(amount=amount)
         logger.info("Manual buy executed successfully")
         return result
     except Exception as e:

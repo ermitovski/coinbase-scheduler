@@ -26,10 +26,21 @@ def get_client():
         logger.error(f"Failed to initialize Coinbase client: {str(e)}")
         raise
 
-def execute_daily_buy():
-    """Execute the daily crypto buy order"""
+def execute_daily_buy(amount=None):
+    """
+    Execute the crypto buy order
+    
+    Args:
+        amount (float, optional): Custom amount to use for this buy. Defaults to None.
+        
+    Returns:
+        dict: Result of the buy operation
+    """
     try:
         client = get_client()
+        
+        # Use the provided amount or fall back to the configured amount
+        buy_amount = amount if amount is not None else config.DAILY_AMOUNT
         
         # Get current price information
         product_info = client.get_product(product_id=config.PRODUCT_ID)
@@ -51,14 +62,14 @@ def execute_daily_buy():
         # Place a limit buy order
         order_result = client.fiat_limit_buy(
             product_id=config.PRODUCT_ID,
-            fiat_amount=str(config.DAILY_AMOUNT)
+            fiat_amount=str(buy_amount)
         )
         
         # Log the transaction
         transaction = {
             'timestamp': datetime.utcnow().isoformat(),
             'product_id': config.PRODUCT_ID,
-            'amount': config.DAILY_AMOUNT,
+            'amount': buy_amount,
             'price': current_price,
             'order_id': order_result.id if hasattr(order_result, 'id') else str(order_result.get('id', "Unknown")),
             'status': 'Success'
@@ -68,17 +79,20 @@ def execute_daily_buy():
         # Send notification
         send_order_notification(transaction)
         
-        logger.info(f"Successfully placed buy order for {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID}")
+        logger.info(f"Successfully placed buy order for {buy_amount} EUR of {config.PRODUCT_ID}")
         return transaction
     except Exception as e:
         error_msg = f"Failed to execute buy: {str(e)}"
         logger.error(error_msg)
         
+        # Use the provided amount or fall back to the configured amount
+        buy_amount = amount if amount is not None else config.DAILY_AMOUNT
+        
         # Log the failure
         transaction = {
             'timestamp': datetime.utcnow().isoformat(),
             'product_id': config.PRODUCT_ID,
-            'amount': config.DAILY_AMOUNT,
+            'amount': buy_amount,
             'price': None,
             'order_id': None,
             'status': 'Failed',

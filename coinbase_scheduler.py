@@ -63,7 +63,7 @@ def run_scheduler():
         logger.error(f"Error in scheduler process: {str(e)}")
         sys.exit(1)
 
-def execute_single_buy():
+def execute_single_buy(amount=None):
     """Execute a single buy operation and exit"""
     try:
         logger.info("Executing manual buy operation...")
@@ -71,8 +71,14 @@ def execute_single_buy():
         # Validate configuration
         config.validate_config()
         
-        # Execute the buy
-        result = manual_buy()
+        # Log the amount being used
+        if amount is not None:
+            logger.info(f"Using custom amount: {amount} EUR (overriding configured amount: {config.DAILY_AMOUNT} EUR)")
+        else:
+            logger.info(f"Using configured amount: {config.DAILY_AMOUNT} EUR")
+        
+        # Execute the buy with optional custom amount
+        result = manual_buy(amount=amount)
         
         logger.info(f"Buy operation completed: {result['status']}")
         if result['status'] == 'Success':
@@ -91,6 +97,7 @@ def main():
     """Main entry point with command line arguments"""
     parser = argparse.ArgumentParser(description='Coinbase Scheduler')
     parser.add_argument('--buy-now', action='store_true', help='Execute a single buy operation and exit')
+    parser.add_argument('--amount', type=float, help='Override the amount for a single buy operation (EUR)')
     parser.add_argument('--show-config', action='store_true', help='Display current configuration and exit')
     
     args = parser.parse_args()
@@ -112,7 +119,7 @@ def main():
         
     # Execute single buy if requested
     if args.buy_now:
-        return execute_single_buy()
+        return execute_single_buy(amount=args.amount)
         
     # Otherwise, run the scheduler
     run_scheduler()
