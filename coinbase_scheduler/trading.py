@@ -174,7 +174,39 @@ def check_pending_orders():
                 order_info['last_checked'] = current_time
                 
                 # Extract order data from nested structure
-                order_data = order_status.get('order', order_status)
+                if isinstance(order_status, dict) and 'order' in order_status:
+                    order_data = order_status['order']
+                elif hasattr(order_status, 'order'):
+                    # It's an object with an order attribute
+                    order_data = order_status.order
+                else:
+                    order_data = order_status
+                
+                # Convert to dict if it's not already
+                if not isinstance(order_data, dict):
+                    # Try to convert using the SDK's to_dict method if available
+                    if hasattr(order_data, 'to_dict'):
+                        order_data = order_data.to_dict()
+                    elif hasattr(order_data, '__dict__'):
+                        order_data = order_data.__dict__
+                    else:
+                        # Last resort: try to access attributes directly
+                        try:
+                            order_dict = {
+                                'status': getattr(order_data, 'status', ''),
+                                'completion_percentage': getattr(order_data, 'completion_percentage', '0'),
+                                'filled_size': getattr(order_data, 'filled_size', '0'),
+                                'filled_value': getattr(order_data, 'filled_value', '0'),
+                                'total_fees': getattr(order_data, 'total_fees', '0'),
+                                'average_filled_price': getattr(order_data, 'average_filled_price', '0'),
+                                'last_fill_time': getattr(order_data, 'last_fill_time', None),
+                                'created_time': getattr(order_data, 'created_time', ''),
+                                'cancel_message': getattr(order_data, 'cancel_message', ''),
+                            }
+                            order_data = order_dict
+                        except Exception as e:
+                            logger.error(f"Failed to extract order attributes: {e}")
+                            continue
                 
                 # Check if order is filled
                 status = order_data.get('status', '').upper()
