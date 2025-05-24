@@ -8,9 +8,20 @@ updates:
     open-pull-requests-limit: 10
     reviewers:
       - "ermitovski"
+    assignees:
+      - "ermitovski"
     labels:
       - "dependencies"
       - "python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Enhanced security features
+    allow:
+      - dependency-type: "all"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Enable version updates for Docker
   - package-ecosystem: "docker"
@@ -20,9 +31,14 @@ updates:
     open-pull-requests-limit: 10
     reviewers:
       - "ermitovski"
+    assignees:
+      - "ermitovski"
     labels:
       - "dependencies"
       - "docker"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -32,6 +48,11 @@ updates:
     open-pull-requests-limit: 10
     reviewers:
       - "ermitovski"
+    assignees:
+      - "ermitovski"
     labels:
       - "dependencies"
       - "github-actions"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
