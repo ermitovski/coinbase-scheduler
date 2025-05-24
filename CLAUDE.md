@@ -37,8 +37,11 @@ python3 coinbase_scheduler.py --show-config
 
 ### Docker deployment
 ```bash
-# Build and run
+# Development (builds locally)
 docker-compose up -d
+
+# Production (uses pre-built image from GitHub Container Registry)
+docker-compose -f docker-compose.prod.yml up -d
 
 # View logs
 docker-compose logs -f
@@ -50,6 +53,8 @@ docker-compose down
 ### Development notes
 - Always activate the virtual environment before running commands: `source venv/bin/activate`
 - To deactivate the virtual environment: `deactivate`
+- Run tests: Currently no automated tests (consider adding pytest)
+- Lint/format: Consider adding ruff or black for Python formatting
 
 ## Architecture
 
@@ -86,3 +91,79 @@ Telegram notifications are sent for:
 - Scheduler startup with configuration details
 - Successful buy orders with transaction details
 - Failed orders with error information
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The repository uses GitHub Actions for automated builds and deployments:
+
+1. **Triggers**:
+   - Push to `main` branch
+   - Pull requests to `main`
+   - GitHub releases
+   - Manual workflow dispatch
+
+2. **Build Process**:
+   - Builds multi-architecture Docker images (linux/amd64, linux/arm64)
+   - Uses Docker buildx for cross-platform builds
+   - Pushes to GitHub Container Registry (ghcr.io)
+
+3. **Security Scanning**:
+   - **Trivy vulnerability scanner**: Scans Docker images for OS and library vulnerabilities
+   - **Trivy secret scanner**: Scans repository for exposed secrets
+   - Results uploaded to GitHub Security tab
+   - Fails on CRITICAL/HIGH vulnerabilities
+
+4. **Image Tagging**:
+   - `main` branch: `main`, `sha-<commit>`
+   - Pull requests: `pr-<number>`
+   - Releases: `v1.2.3`, `1.2`, `1`, `latest`, `sha-<commit>`
+   - Note: `latest` tag only applied on releases
+
+### Development Workflow
+
+1. **Creating a new feature**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   # Make changes
+   git add .
+   git commit -m "Add your feature"
+   git push -u origin feature/your-feature-name
+   ```
+
+2. **Pull Request Process**:
+   - Create PR against `main` branch
+   - CI will build and scan the Docker image
+   - Wait for all checks to pass
+   - Request review if needed
+
+3. **Release Process**:
+   - Merge PR to `main`
+   - Create a new release on GitHub
+   - Tag with semantic version (e.g., `v1.2.3`)
+   - CI will automatically build, scan, and publish Docker images
+   - Release notes are automatically updated with Docker pull commands
+
+### Dependency Management
+
+- **Dependabot** is enabled for:
+  - Python dependencies (pip)
+  - GitHub Actions
+  - Docker base images
+- PRs are automatically created for dependency updates
+- Review and merge dependency PRs regularly
+
+### Security Best Practices
+
+1. **Never commit secrets** - Use environment variables
+2. **Review Trivy scan results** - Fix vulnerabilities before release
+3. **Keep dependencies updated** - Merge Dependabot PRs promptly
+4. **Use specific versions** - Avoid using `latest` tags in production
+
+### Monitoring and Logs
+
+- Check GitHub Actions tab for build status
+- Review Security tab for vulnerability reports
+- Docker logs available via `docker logs` or `docker-compose logs`
+- Consider adding application metrics/monitoring for production
