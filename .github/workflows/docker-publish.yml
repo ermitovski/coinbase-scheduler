@@ -56,7 +56,18 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
             
-      - name: Build and push Docker image
+      - name: Build Docker image for scanning (single platform)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-temp
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          load: true  # Load image locally for scanning
+          
+      - name: Build and push Docker image (multi-platform)
         uses: docker/build-push-action@v6
         id: build
         with:
@@ -67,12 +78,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          load: true  # Load image locally for scanning
           
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-temp
           format: 'sarif'
           output: 'trivy-results.sarif'
           
@@ -85,7 +95,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Table format)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-temp
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
