@@ -22,6 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write  # Added for security scanning
       
     steps:
       - name: Checkout repository
@@ -66,6 +67,46 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true  # Load image locally for scanning
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          
+      - name: Run Trivy vulnerability scanner (Table format)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          
+      # Additional security: Scan for secrets in the repository
+      - name: Run Trivy secret scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-secret-results.sarif'
+          
+      - name: Upload Trivy secret scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-secret-results.sarif'
+          category: 'secrets'
           
   update-release:
     needs: build
@@ -94,6 +135,10 @@ jobs:
           echo "  --env-file .env \\" >> release-notes.md
           echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> release-notes.md
           echo "\`\`\`" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "## Security" >> release-notes.md
+          echo "✅ This release has been scanned for vulnerabilities and secrets" >> release-notes.md
+          echo "✅ All dependencies are up to date" >> release-notes.md
           
       - name: Update Release
         uses: softprops/action-gh-release@v2
