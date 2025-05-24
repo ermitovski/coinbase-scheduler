@@ -1,18 +1,22 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from coinbase_advanced_trader.enhanced_rest_client import EnhancedRESTClient
 from coinbase_scheduler import config
-from coinbase_scheduler.notifications import send_order_notification
+from coinbase_scheduler.notifications import send_order_notification, send_order_filled_notification
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('coinbase_scheduler.trading')
+logger.setLevel(logging.DEBUG)
 
 # Transaction history
 transaction_history = []
+
+# Pending orders to monitor
+pending_orders = {}
 
 def get_client():
     """Initialize and return a Coinbase client"""
@@ -67,7 +71,7 @@ def execute_buy(amount=None):
         
         # Log the transaction
         transaction = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'product_id': config.PRODUCT_ID,
             'amount': buy_amount,
             'price': current_price,
@@ -78,6 +82,15 @@ def execute_buy(amount=None):
         
         # Send notification
         send_order_notification(transaction)
+        
+        # Add to pending orders if we have a valid order ID
+        if transaction['order_id'] and transaction['order_id'] != "Unknown":
+            pending_orders[transaction['order_id']] = {
+                'transaction': transaction,
+                'created_at': datetime.now(timezone.utc),
+                'last_checked': datetime.now(timezone.utc)
+            }
+            logger.info(f"Added order {transaction['order_id']} to pending orders monitoring")
         
         logger.info(f"Successfully placed buy order for {buy_amount} EUR of {config.PRODUCT_ID}")
         return transaction
@@ -90,7 +103,7 @@ def execute_buy(amount=None):
         
         # Log the failure
         transaction = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'product_id': config.PRODUCT_ID,
             'amount': buy_amount,
             'price': None,
@@ -104,6 +117,112 @@ def execute_buy(amount=None):
         send_order_notification(transaction)
         
         return transaction
+
+def check_order_status(order_id):
+    """
+    Check the status of an order by order ID
+    
+    Args:
+        order_id (str): The order ID to check
+        
+    Returns:
+        dict: Order status information
+    """
+    try:
+        client = get_client()
+        order = client.get_order(order_id)
+        
+        # Handle different response types
+        if hasattr(order, '__dict__'):
+            # Convert object to dict if needed
+            order_dict = order.__dict__
+        else:
+            order_dict = order
+            
+        # Log the order structure for debugging
+        logger.debug(f"Order {order_id} raw response type: {type(order)}")
+        logger.debug(f"Order {order_id} data: {order_dict}")
+        
+        return order_dict
+    except Exception as e:
+        logger.error(f"Failed to check order status for {order_id}: {str(e)}")
+        return None
+
+def check_pending_orders():
+    """
+    Check the status of all pending orders and send notifications for filled orders.
+    Orders are monitored until they are filled, cancelled, or failed.
+    
+    Returns:
+        int: Number of orders checked
+    """
+    if not pending_orders:
+        return 0
+        
+    orders_to_remove = []
+    checked_count = 0
+    current_time = datetime.now(timezone.utc)
+    
+    logger.info(f"Checking {len(pending_orders)} pending orders...")
+    
+    for order_id, order_info in pending_orders.items():
+        try:
+            # Check order status
+            order_status = check_order_status(order_id)
+            if order_status:
+                checked_count += 1
+                order_info['last_checked'] = current_time
+                
+                # Extract order data from nested structure
+                order_data = order_status.get('order', order_status)
+                
+                # Check if order is filled
+                status = order_data.get('status', '').upper()
+                logger.info(f"Order {order_id} status: {status}")
+                
+                # Also check completion percentage and filled size
+                completion = order_data.get('completion_percentage', '0')
+                filled_size = order_data.get('filled_size', '0')
+                logger.debug(f"Order {order_id} completion: {completion}%, filled_size: {filled_size}")
+                
+                if status in ['FILLED', 'DONE', 'COMPLETED'] or completion == '100':
+                    logger.info(f"Order {order_id} has been filled!")
+                    send_order_filled_notification(order_data, order_info['transaction'])
+                    orders_to_remove.append(order_id)
+                elif status in ['CANCELLED', 'EXPIRED', 'FAILED', 'REJECTED']:
+                    logger.info(f"Order {order_id} was {status}")
+                    orders_to_remove.append(order_id)
+                    # Send notification about order status
+                    from coinbase_scheduler.notifications import send_telegram_notification
+                    message = (
+                        f"❌ *Order {status.capitalize()}*\n\n"
+                        f"• *Product*: `{order_info['transaction']['product_id']}`\n"
+                        f"• *Order ID*: `{order_id}`\n"
+                        f"• *Amount*: `{order_info['transaction']['amount']} EUR`\n"
+                        f"• *Status*: `{status}`\n"
+                        f"• *Created*: `{order_info['created_at'].isoformat()}`"
+                    )
+                    send_telegram_notification(message)
+                else:
+                    # Order is still pending
+                    age_hours = (current_time - order_info['created_at']).total_seconds() / 3600
+                    logger.debug(f"Order {order_id} is still {status}, age: {age_hours:.1f} hours")
+                    
+        except Exception as e:
+            logger.error(f"Error checking order {order_id}: {str(e)}")
+            
+    # Remove processed orders
+    for order_id in orders_to_remove:
+        del pending_orders[order_id]
+        
+    if checked_count > 0:
+        logger.info(f"Checked {checked_count} orders, {len(orders_to_remove)} removed from monitoring")
+        
+    return checked_count
+
+def get_pending_orders():
+    """Return the pending orders"""
+    return pending_orders
 
 def get_transaction_history():
     """Return the transaction history"""

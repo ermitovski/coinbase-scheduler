@@ -3,7 +3,7 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from coinbase_scheduler import config
-from coinbase_scheduler.trading import execute_buy
+from coinbase_scheduler.trading import execute_buy, check_pending_orders
 
 # Set up logging
 logger = logging.getLogger('coinbase_scheduler.scheduler')
@@ -68,6 +68,15 @@ def init_scheduler():
             replace_existing=True
         )
         
+        # Add a job to check pending orders every 15 minutes (for better responsiveness)
+        scheduler.add_job(
+            func=check_pending_orders,
+            trigger=CronTrigger(minute='0,15,30,45', timezone='UTC'),  # Run every 15 minutes
+            id='check_orders_job',
+            name='Check pending orders status',
+            replace_existing=True
+        )
+        
         # Start the scheduler
         scheduler.start()
         
@@ -77,6 +86,8 @@ def init_scheduler():
             logger.info(f"Scheduler started: Weekly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
         else:  # monthly
             logger.info(f"Scheduler started: Monthly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on day {config.MONTHLY_DAY} at {config.BUY_TIME} UTC")
+        
+        logger.info("Order status checking job scheduled to run every 15 minutes")
     except Exception as e:
         logger.error(f"Failed to initialize scheduler: {str(e)}")
         raise
@@ -125,6 +136,17 @@ def get_next_run_time():
         return None
     except Exception as e:
         logger.error(f"Failed to get next run time: {str(e)}")
+        return None
+
+def get_next_check_time():
+    """Get the next scheduled run time for the order check job"""
+    try:
+        job = scheduler.get_job('check_orders_job')
+        if job and job.next_run_time:
+            return job.next_run_time.isoformat()
+        return None
+    except Exception as e:
+        logger.error(f"Failed to get next check time: {str(e)}")
         return None
 
 def manual_buy(amount=None):

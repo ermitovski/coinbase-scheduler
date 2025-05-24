@@ -128,6 +128,44 @@ def send_startup_notification(config):
     # Send the notification
     send_telegram_notification(message)
 
+def format_order_filled_notification(order_details, original_transaction):
+    """
+    Format an order filled notification message.
+    
+    Args:
+        order_details (dict): Order details from get_order API
+        original_transaction (dict): Original transaction details
+        
+    Returns:
+        str: Formatted message
+    """
+    # Handle nested structure if present
+    if 'order' in order_details:
+        order_data = order_details['order']
+    else:
+        order_data = order_details
+        
+    # Extract relevant information from order details
+    status = order_data.get('status', 'unknown')
+    filled_value = order_data.get('filled_value', '0')
+    filled_size = order_data.get('filled_size', '0')
+    total_fees = order_data.get('total_fees', '0')
+    average_filled_price = order_data.get('average_filled_price', '0')
+    
+    message = (
+        f"✅ *Coinbase Order Filled*\n\n"
+        f"• *Product*: `{original_transaction['product_id']}`\n"
+        f"• *Order ID*: `{original_transaction['order_id']}`\n"
+        f"• *Status*: `{status}`\n"
+        f"• *Filled Value*: `{filled_value} EUR`\n"
+        f"• *Filled Size*: `{filled_size}`\n"
+        f"• *Average Price*: `{average_filled_price}`\n"
+        f"• *Total Fees*: `{total_fees} EUR`\n"
+        f"• *Time*: `{order_data.get('last_fill_time') or order_data.get('created_time', original_transaction['timestamp'])}`"
+    )
+    
+    return message
+
 def send_order_notification(transaction):
     """
     Send a notification for an order transaction.
@@ -143,6 +181,26 @@ def send_order_notification(transaction):
         
     # Format the notification message
     message = format_order_notification(transaction)
+    
+    # Send the notification
+    send_telegram_notification(message)
+
+def send_order_filled_notification(order_details, original_transaction):
+    """
+    Send a notification when an order is filled.
+    
+    Args:
+        order_details (dict): Order details from get_order API
+        original_transaction (dict): Original transaction details
+        
+    Returns:
+        None
+    """
+    if not TELEGRAM_NOTIFICATIONS_ENABLED:
+        return
+        
+    # Format the notification message
+    message = format_order_filled_notification(order_details, original_transaction)
     
     # Send the notification
     send_telegram_notification(message)

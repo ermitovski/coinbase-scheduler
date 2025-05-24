@@ -17,7 +17,7 @@ logger = logging.getLogger('coinbase_scheduler')
 load_dotenv()
 
 # Import scheduler components
-from coinbase_scheduler.scheduler import scheduler, init_scheduler, manual_buy
+from coinbase_scheduler.scheduler import scheduler, init_scheduler, manual_buy, get_next_check_time
 from coinbase_scheduler import config
 from coinbase_scheduler.notifications import send_startup_notification
 
@@ -56,6 +56,11 @@ def run_scheduler():
         
         # Send startup notification
         send_startup_notification(config)
+        
+        # Log next order check time
+        next_check = get_next_check_time()
+        if next_check:
+            logger.info(f"Next order status check scheduled at: {next_check}")
         
         # Keep the process running until a signal is received
         while True:
