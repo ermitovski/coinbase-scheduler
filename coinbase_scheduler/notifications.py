@@ -97,13 +97,15 @@ def format_config_notification(config):
     message = (
         f"🚀 *Coinbase Scheduler Started*\n\n"
         f"• *Product*: `{config.PRODUCT_ID}`\n"
-        f"• *Amount*: `{config.DAILY_AMOUNT} EUR`\n"
+        f"• *Amount*: `{config.AMOUNT} EUR`\n"
     )
     
     if config.ORDER_FREQUENCY == 'daily':
         message += f"• *Schedule*: `Daily at {config.BUY_TIME} UTC`\n"
-    else:
+    elif config.ORDER_FREQUENCY == 'weekly':
         message += f"• *Schedule*: `Weekly on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC`\n"
+    else:  # monthly
+        message += f"• *Schedule*: `Monthly on day {config.MONTHLY_DAY} at {config.BUY_TIME} UTC`\n"
     
     return message
 

@@ -45,12 +45,14 @@ def run_scheduler():
         
         logger.info("Scheduler started successfully")
         logger.info(f"Product: {config.PRODUCT_ID}")
-        logger.info(f"Amount: {config.DAILY_AMOUNT}")
+        logger.info(f"Amount: {config.AMOUNT}")
         
         if config.ORDER_FREQUENCY == 'daily':
             logger.info(f"Schedule: Daily at {config.BUY_TIME} UTC")
-        else:
+        elif config.ORDER_FREQUENCY == 'weekly':
             logger.info(f"Schedule: Weekly on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
+        else:  # monthly
+            logger.info(f"Schedule: Monthly on day {config.MONTHLY_DAY} at {config.BUY_TIME} UTC")
         
         # Send startup notification
         send_startup_notification(config)
@@ -73,9 +75,9 @@ def execute_single_buy(amount=None):
         
         # Log the amount being used
         if amount is not None:
-            logger.info(f"Using custom amount: {amount} EUR (overriding configured amount: {config.DAILY_AMOUNT} EUR)")
+            logger.info(f"Using custom amount: {amount} EUR (overriding configured amount: {config.AMOUNT} EUR)")
         else:
-            logger.info(f"Using configured amount: {config.DAILY_AMOUNT} EUR")
+            logger.info(f"Using configured amount: {config.AMOUNT} EUR")
         
         # Execute the buy with optional custom amount
         result = manual_buy(amount=amount)
@@ -106,11 +108,13 @@ def main():
     if args.show_config:
         print("\nCoinbase Scheduler Configuration:")
         print(f"Product ID: {config.PRODUCT_ID}")
-        print(f"Amount: {config.DAILY_AMOUNT}")
+        print(f"Amount: {config.AMOUNT}")
         print(f"Buy Time: {config.BUY_TIME} UTC")
         print(f"Frequency: {config.ORDER_FREQUENCY}")
         if config.ORDER_FREQUENCY == 'weekly':
             print(f"Weekly Day: {config.WEEKLY_DAY.capitalize()}")
+        elif config.ORDER_FREQUENCY == 'monthly':
+            print(f"Monthly Day: {config.MONTHLY_DAY}")
         
         # Send configuration as Telegram notification
         send_startup_notification(config)

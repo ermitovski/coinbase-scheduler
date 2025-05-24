@@ -1,10 +1,10 @@
 # Coinbase Scheduler
 
-A simplified scheduler tool to execute recurring cryptocurrency purchases on Coinbase. This tool automates the process of buying a specified amount of cryptocurrency at regular intervals (daily or weekly).
+A simplified scheduler tool to execute recurring cryptocurrency purchases on Coinbase. This tool automates the process of buying a specified amount of cryptocurrency at regular intervals (daily, weekly, or monthly).
 
 ## Features
 
-- Automated cryptocurrency purchasing on a daily or weekly schedule
+- Automated cryptocurrency purchasing on a daily, weekly, or monthly schedule
 - Configurable purchase amount and timing
 - Support for any Coinbase-supported cryptocurrency pair
 - Command-line interface for manual operations
@@ -37,10 +37,11 @@ The application is configured through environment variables, which can be set in
 - `COINBASE_API_KEY`: Your Coinbase Advanced Trade API key
 - `COINBASE_API_SECRET`: Your Coinbase Advanced Trade API secret
 - `PRODUCT_ID`: The cryptocurrency pair to trade (e.g., `BTC-EUR`)
-- `DAILY_AMOUNT`: The amount of fiat currency to use for each purchase
+- `AMOUNT`: The amount of fiat currency to use for each purchase
 - `BUY_TIME`: The time to execute purchases (in UTC, format: HH:MM)
-- `ORDER_FREQUENCY`: Frequency of purchases (`daily` or `weekly`)
+- `ORDER_FREQUENCY`: Frequency of purchases (`daily`, `weekly`, or `monthly`)
 - `WEEKLY_DAY`: Day of the week for weekly purchases (`monday`, `tuesday`, etc.)
+- `MONTHLY_DAY`: Day of the month (1-28) for monthly purchases
 
 ## Usage
 

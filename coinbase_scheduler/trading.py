@@ -26,7 +26,7 @@ def get_client():
         logger.error(f"Failed to initialize Coinbase client: {str(e)}")
         raise
 
-def execute_daily_buy(amount=None):
+def execute_buy(amount=None):
     """
     Execute the crypto buy order
     
@@ -40,7 +40,7 @@ def execute_daily_buy(amount=None):
         client = get_client()
         
         # Use the provided amount or fall back to the configured amount
-        buy_amount = amount if amount is not None else config.DAILY_AMOUNT
+        buy_amount = amount if amount is not None else config.AMOUNT
         
         # Get current price information
         product_info = client.get_product(product_id=config.PRODUCT_ID)
@@ -86,7 +86,7 @@ def execute_daily_buy(amount=None):
         logger.error(error_msg)
         
         # Use the provided amount or fall back to the configured amount
-        buy_amount = amount if amount is not None else config.DAILY_AMOUNT
+        buy_amount = amount if amount is not None else config.AMOUNT
         
         # Log the failure
         transaction = {

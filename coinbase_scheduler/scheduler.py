@@ -3,7 +3,7 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from coinbase_scheduler import config
-from coinbase_scheduler.trading import execute_daily_buy
+from coinbase_scheduler.trading import execute_buy
 
 # Set up logging
 logger = logging.getLogger('coinbase_scheduler.scheduler')
@@ -23,7 +23,7 @@ def get_cron_trigger():
             minute=minute,
             timezone='UTC'
         )
-    else:  # weekly
+    elif config.ORDER_FREQUENCY == 'weekly':
         # Get day of week (0-6 where 0=Monday)
         day_of_week_map = {
             'monday': 0,
@@ -43,6 +43,15 @@ def get_cron_trigger():
             minute=minute,
             timezone='UTC'
         )
+    else:  # monthly
+        # Create a cron trigger to execute monthly on the specified day and time (UTC)
+        # Note: Using day instead of day_of_week for monthly scheduling
+        return CronTrigger(
+            day=config.MONTHLY_DAY,
+            hour=hour,
+            minute=minute,
+            timezone='UTC'
+        )
 
 def init_scheduler():
     """Initialize and start the scheduler for buys"""
@@ -52,7 +61,7 @@ def init_scheduler():
         
         # Add the job to the scheduler
         scheduler.add_job(
-            func=execute_daily_buy,
+            func=execute_buy,
             trigger=trigger,
             id='buy_job',
             name=f'Execute {config.ORDER_FREQUENCY} {config.PRODUCT_ID} buy',
@@ -63,9 +72,11 @@ def init_scheduler():
         scheduler.start()
         
         if config.ORDER_FREQUENCY == 'daily':
-            logger.info(f"Scheduler started: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
-        else:
-            logger.info(f"Scheduler started: Weekly buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
+            logger.info(f"Scheduler started: Daily buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+        elif config.ORDER_FREQUENCY == 'weekly':
+            logger.info(f"Scheduler started: Weekly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
+        else:  # monthly
+            logger.info(f"Scheduler started: Monthly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on day {config.MONTHLY_DAY} at {config.BUY_TIME} UTC")
     except Exception as e:
         logger.error(f"Failed to initialize scheduler: {str(e)}")
         raise
@@ -92,9 +103,11 @@ def update_scheduler():
             )
             
             if config.ORDER_FREQUENCY == 'daily':
-                logger.info(f"Scheduler updated: Daily buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
-            else:
-                logger.info(f"Scheduler updated: Weekly buy of {config.DAILY_AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
+                logger.info(f"Scheduler updated: Daily buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} at {config.BUY_TIME} UTC")
+            elif config.ORDER_FREQUENCY == 'weekly':
+                logger.info(f"Scheduler updated: Weekly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on {config.WEEKLY_DAY.capitalize()} at {config.BUY_TIME} UTC")
+            else:  # monthly
+                logger.info(f"Scheduler updated: Monthly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on day {config.MONTHLY_DAY} at {config.BUY_TIME} UTC")
             return True
         else:
             logger.warning("Scheduler is not running, cannot update")
@@ -125,7 +138,7 @@ def manual_buy(amount=None):
         dict: Result of the buy operation
     """
     try:
-        result = execute_daily_buy(amount=amount)
+        result = execute_buy(amount=amount)
         logger.info("Manual buy executed successfully")
         return result
     except Exception as e:
