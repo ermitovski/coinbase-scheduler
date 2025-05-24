@@ -1,7 +1,6 @@
 # Coinbase Scheduler
 
 [![Docker Build](https://github.com/ermitovski/coinbase-scheduler/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ermitovski/coinbase-scheduler/actions/workflows/docker-publish.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/ermitovski/coinbase-scheduler)](https://hub.docker.com/r/ermitovski/coinbase-scheduler)
 [![GitHub release](https://img.shields.io/github/release/ermitovski/coinbase-scheduler.svg)](https://github.com/ermitovski/coinbase-scheduler/releases)
 [![Security](https://img.shields.io/badge/security-enabled-brightgreen)](https://github.com/ermitovski/coinbase-scheduler/security)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
