@@ -108,8 +108,10 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          scanners: 'secret'
           format: 'sarif'
           output: 'trivy-secret-results.sarif'
+          severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
           
       - name: Upload Trivy secret scan results
         uses: github/codeql-action/upload-sarif@v3
@@ -117,6 +119,16 @@ jobs:
         with:
           sarif_file: 'trivy-secret-results.sarif'
           category: 'secrets'
+          
+      - name: Run Trivy secret scanner (Table format)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'secret'
+          format: 'table'
+          exit-code: '0'  # Don't fail the build on secrets
           
   update-release:
     needs: build
