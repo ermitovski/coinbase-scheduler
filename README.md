@@ -69,9 +69,29 @@ python coinbase_scheduler.py --show-config
 
 ## Docker Deployment
 
+### Using Pre-built Images
+
+Pull the latest image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/ermitovski/coinbase-scheduler:latest
+```
+
+Run the container:
+
+```bash
+docker run -d \
+  --name coinbase-scheduler \
+  --env-file .env \
+  --restart unless-stopped \
+  ghcr.io/ermitovski/coinbase-scheduler:latest
+```
+
+### Using Docker Compose
+
 Build and run using Docker Compose:
 
-```
+```bash
 docker-compose up -d
 ```
 

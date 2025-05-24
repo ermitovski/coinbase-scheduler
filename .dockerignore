@@ -1,0 +1,50 @@
+# Git files
+.git
+.gitignore
+
+# GitHub files
+.github/
+
+# Python files
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!README.md
+
+# Docker files
+docker-compose*.yml
+Dockerfile
+
+# Old directory
+OLD/
+
+# Instance directory
+instance/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
