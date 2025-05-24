@@ -5,8 +5,6 @@ on:
     branches:
       - main
       - develop
-    tags:
-      - 'v*.*.*'
   pull_request:
     branches:
       - main
@@ -69,10 +67,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           
-  release:
+  update-release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release'
     permissions:
       contents: write
       
@@ -86,7 +84,7 @@ jobs:
           echo "" >> release-notes.md
           echo "### GitHub Container Registry" >> release-notes.md
           echo "\`\`\`bash" >> release-notes.md
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" >> release-notes.md
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> release-notes.md
           echo "\`\`\`" >> release-notes.md
           echo "" >> release-notes.md
           echo "### Running the Container" >> release-notes.md
@@ -94,11 +92,12 @@ jobs:
           echo "docker run -d \\" >> release-notes.md
           echo "  --name coinbase-scheduler \\" >> release-notes.md
           echo "  --env-file .env \\" >> release-notes.md
-          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" >> release-notes.md
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> release-notes.md
           echo "\`\`\`" >> release-notes.md
           
       - name: Update Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.event.release.tag_name }}
           append_body: true
           body_path: release-notes.md
