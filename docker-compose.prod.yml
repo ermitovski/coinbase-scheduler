@@ -2,7 +2,7 @@ version: '3'
 
 services:
   scheduler:
-    image: wi
+    image: ghcr.io/ermitovski/coinbase-scheduler:latest
     env_file:
       - .env
     restart: unless-stopped
