@@ -17,6 +17,11 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for changelog generation
           
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          
       - name: Get previous release tag
         id: prev_tag
         run: |
@@ -119,11 +124,32 @@ jobs:
           echo "### 👥 Contributors" >> changelog.md
           echo "" >> changelog.md
           
-          # Get unique contributors
-          CONTRIBUTORS=$(git log $PREV_TAG..$CURRENT_TAG --pretty=format:"%an" | sort -u)
-          while IFS= read -r contributor; do
-            echo "- $contributor" >> changelog.md
-          done <<< "$CONTRIBUTORS"
+          # Get unique commit SHAs for this release
+          COMMITS=$(git log $PREV_TAG..$CURRENT_TAG --pretty=format:"%H")
+          CONTRIBUTORS=""
+          
+          # For each commit, try to get GitHub username
+          for commit in $COMMITS; do
+            # Get commit info from GitHub API
+            COMMIT_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/commits/$commit")
+            
+            # Extract author login (GitHub username)
+            AUTHOR_LOGIN=$(echo "$COMMIT_INFO" | jq -r '.author.login // empty')
+            
+            if [ -n "$AUTHOR_LOGIN" ]; then
+              CONTRIBUTORS="$CONTRIBUTORS\n@$AUTHOR_LOGIN"
+            else
+              # Fallback to commit author name if no GitHub account linked
+              AUTHOR_NAME=$(echo "$COMMIT_INFO" | jq -r '.commit.author.name // empty')
+              if [ -n "$AUTHOR_NAME" ]; then
+                CONTRIBUTORS="$CONTRIBUTORS\n$AUTHOR_NAME"
+              fi
+            fi
+          done
+          
+          # Remove duplicates and format
+          echo -e "$CONTRIBUTORS" | sort -u | grep -v "^$" | sed 's/^/- /' >> changelog.md
           
           # Add full changelog link
           echo "" >> changelog.md

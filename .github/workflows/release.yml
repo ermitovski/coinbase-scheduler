@@ -24,6 +24,11 @@ jobs:
         with:
           fetch-depth: 0
           
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          
       - name: Get previous release tag
         id: previous_tag
         run: |
@@ -96,7 +101,32 @@ jobs:
             # Add contributors
             echo "## 👥 Contributors"
             echo ""
-            git log $PREV_TAG..$CURRENT_TAG --pretty=format:"- @%an" | sort -u
+            # Get unique commit SHAs
+            COMMITS=$(git log $PREV_TAG..$CURRENT_TAG --pretty=format:"%H")
+            CONTRIBUTORS=""
+            
+            # For each commit, get the GitHub username using API
+            for commit in $COMMITS; do
+              # Get commit info from GitHub API
+              COMMIT_INFO=$(curl -s -H "Authorization: token ${{ github.token }}" \
+                "https://api.github.com/repos/${{ github.repository }}/commits/$commit")
+              
+              # Extract author login (GitHub username)
+              AUTHOR_LOGIN=$(echo "$COMMIT_INFO" | jq -r '.author.login // empty')
+              
+              if [ -n "$AUTHOR_LOGIN" ]; then
+                CONTRIBUTORS="$CONTRIBUTORS\n@$AUTHOR_LOGIN"
+              else
+                # Fallback to commit author name if no GitHub account linked
+                AUTHOR_NAME=$(echo "$COMMIT_INFO" | jq -r '.commit.author.name // empty')
+                if [ -n "$AUTHOR_NAME" ]; then
+                  CONTRIBUTORS="$CONTRIBUTORS\n$AUTHOR_NAME"
+                fi
+              fi
+            done
+            
+            # Remove duplicates and format
+            echo -e "$CONTRIBUTORS" | sort -u | grep -v "^$" | sed 's/^/- /'
             echo ""
             echo ""
             
