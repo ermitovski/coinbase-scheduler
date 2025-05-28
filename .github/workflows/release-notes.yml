@@ -95,6 +95,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
           commit-message: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
           title: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
           body: |
