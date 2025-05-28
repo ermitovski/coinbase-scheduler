@@ -134,7 +134,7 @@ jobs:
           # For each commit, try to get GitHub username
           for commit in $COMMITS; do
             # Get commit info from GitHub API
-            COMMIT_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            COMMIT_INFO=$(curl -s -H "Authorization: token ${{ github.token }}" \
               "https://api.github.com/repos/${{ github.repository }}/commits/$commit")
             
             # Extract author email, login, and name

@@ -12,6 +12,8 @@ permissions:
   contents: write
   packages: write
   pull-requests: write
+  issues: write
+  repository-projects: write
 
 jobs:
   # Generate changelog and update release notes
@@ -23,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main  # Checkout main branch instead of the tag
           
       - name: Install jq
         run: |
@@ -192,7 +195,7 @@ jobs:
       - name: Create Pull Request for CHANGELOG
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           base: main
           commit-message: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
           title: "📝 Update CHANGELOG for ${{ github.event.release.tag_name }}"
