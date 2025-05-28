@@ -6,11 +6,11 @@ from coinbase_scheduler.notifications import send_order_notification, send_order
 
 # Set up logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('coinbase_scheduler.trading')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Transaction history
 transaction_history = []
