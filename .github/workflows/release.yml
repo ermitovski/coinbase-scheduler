@@ -101,9 +101,13 @@ jobs:
             # Add contributors
             echo "## 👥 Contributors"
             echo ""
+            
+            # Use associative arrays to track contributors
+            declare -A GITHUB_USERS
+            declare -A AUTHOR_NAMES
+            
             # Get unique commit SHAs
             COMMITS=$(git log $PREV_TAG..$CURRENT_TAG --pretty=format:"%H")
-            CONTRIBUTORS=""
             
             # For each commit, get the GitHub username using API
             for commit in $COMMITS; do
@@ -111,22 +115,37 @@ jobs:
               COMMIT_INFO=$(curl -s -H "Authorization: token ${{ github.token }}" \
                 "https://api.github.com/repos/${{ github.repository }}/commits/$commit")
               
-              # Extract author login (GitHub username)
+              # Extract author email, login, and name
+              AUTHOR_EMAIL=$(echo "$COMMIT_INFO" | jq -r '.commit.author.email // empty')
               AUTHOR_LOGIN=$(echo "$COMMIT_INFO" | jq -r '.author.login // empty')
+              AUTHOR_NAME=$(echo "$COMMIT_INFO" | jq -r '.commit.author.name // empty')
               
-              if [ -n "$AUTHOR_LOGIN" ]; then
-                CONTRIBUTORS="$CONTRIBUTORS\n@$AUTHOR_LOGIN"
-              else
-                # Fallback to commit author name if no GitHub account linked
-                AUTHOR_NAME=$(echo "$COMMIT_INFO" | jq -r '.commit.author.name // empty')
-                if [ -n "$AUTHOR_NAME" ]; then
-                  CONTRIBUTORS="$CONTRIBUTORS\n$AUTHOR_NAME"
+              # Store GitHub username if available
+              if [ -n "$AUTHOR_LOGIN" ] && [ -n "$AUTHOR_EMAIL" ]; then
+                GITHUB_USERS[$AUTHOR_EMAIL]="@$AUTHOR_LOGIN"
+              elif [ -n "$AUTHOR_NAME" ] && [ -n "$AUTHOR_EMAIL" ]; then
+                # Only store author name if we don't have a GitHub username for this email
+                if [ -z "${GITHUB_USERS[$AUTHOR_EMAIL]}" ]; then
+                  AUTHOR_NAMES[$AUTHOR_EMAIL]="$AUTHOR_NAME"
                 fi
               fi
             done
             
-            # Remove duplicates and format
-            echo -e "$CONTRIBUTORS" | sort -u | grep -v "^$" | sed 's/^/- /'
+            # Collect all contributors and sort them
+            {
+              # Output GitHub users
+              for email in "${!GITHUB_USERS[@]}"; do
+                echo "- ${GITHUB_USERS[$email]}"
+              done
+              
+              # Output author names only if no GitHub username exists for that email
+              for email in "${!AUTHOR_NAMES[@]}"; do
+                if [ -z "${GITHUB_USERS[$email]}" ]; then
+                  echo "- ${AUTHOR_NAMES[$email]}"
+                fi
+              done
+            } | sort -u
+            
             echo ""
             echo ""
             
