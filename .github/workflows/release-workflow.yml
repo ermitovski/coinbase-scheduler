@@ -1,13 +1,22 @@
-name: Generate Release Changelog
+name: Release Workflow
 
 on:
   release:
-    types: [created]
+    types: [published, created]  # Support both types
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: write
+  packages: write
+  pull-requests: write
+  issues: write
+  repository-projects: write
 
 jobs:
+  # Generate changelog and update release notes
   changelog:
     runs-on: ubuntu-latest
     
@@ -15,7 +24,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for changelog generation
+          fetch-depth: 0
+          ref: main  # Checkout main branch instead of the tag
           
       - name: Install jq
         run: |
@@ -119,9 +129,46 @@ jobs:
             echo -e "$OTHER" >> changelog.md
           fi
           
-          # Add contributors section
+          # Add Docker images section
           echo "" >> changelog.md
-          echo "### 👥 Contributors" >> changelog.md
+          echo "## 🐳 Docker Images" >> changelog.md
+          echo "" >> changelog.md
+          echo "Pull the latest image:" >> changelog.md
+          echo '```bash' >> changelog.md
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> changelog.md
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> changelog.md
+          echo '```' >> changelog.md
+          echo "" >> changelog.md
+          echo "Run with Docker Compose:" >> changelog.md
+          echo '```bash' >> changelog.md
+          echo "# Production deployment" >> changelog.md
+          echo "docker-compose -f docker-compose.prod.yml up -d" >> changelog.md
+          echo "" >> changelog.md
+          echo "# Development deployment" >> changelog.md
+          echo "docker-compose up -d" >> changelog.md
+          echo '```' >> changelog.md
+          echo "" >> changelog.md
+          
+          # Add quick start section
+          echo "## 🚀 Quick Start" >> changelog.md
+          echo "" >> changelog.md
+          echo '```bash' >> changelog.md
+          echo "# Create your .env file" >> changelog.md
+          echo "cp .env.example .env" >> changelog.md
+          echo "" >> changelog.md
+          echo "# Edit your configuration" >> changelog.md
+          echo "nano .env" >> changelog.md
+          echo "" >> changelog.md
+          echo "# Run the scheduler" >> changelog.md
+          echo "docker run -d \\" >> changelog.md
+          echo "  --name coinbase-scheduler \\" >> changelog.md
+          echo "  --env-file .env \\" >> changelog.md
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> changelog.md
+          echo '```' >> changelog.md
+          echo "" >> changelog.md
+          
+          # Add contributors section
+          echo "## 👥 Contributors" >> changelog.md
           echo "" >> changelog.md
           
           # Use associative arrays to track contributors
@@ -153,7 +200,7 @@ jobs:
             fi
           done
           
-          # Collect and sort all contributors
+          # Collect all contributors and sort them
           {
             # Output GitHub users
             for email in "${!GITHUB_USERS[@]}"; do
@@ -168,7 +215,6 @@ jobs:
             done
           } | sort -u >> changelog.md
           
-          # Add full changelog link
           echo "" >> changelog.md
           echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG" >> changelog.md
           
@@ -181,3 +227,54 @@ jobs:
           tag_name: ${{ github.event.release.tag_name }}
           body_path: changelog.md
           append_body: false  # Replace the body instead of appending
+          
+      - name: Create or Update CHANGELOG.md
+        # Only run on 'published' event to avoid duplicate PRs
+        if: github.event.action == 'published'
+        run: |
+          # Check if CHANGELOG.md exists
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Create a temporary file with the new entry
+          {
+            echo "## [${{ github.event.release.tag_name }}] - $(date +%Y-%m-%d)"
+            echo ""
+            cat changelog.md | sed 's/## What'\''s Changed in .*//'
+            echo ""
+            echo "---"
+            echo ""
+          } > new-entry.md
+          
+          # Prepend the new entry to CHANGELOG.md (after the header)
+          head -n 4 CHANGELOG.md > temp-changelog.md
+          cat new-entry.md >> temp-changelog.md
+          tail -n +5 CHANGELOG.md >> temp-changelog.md
+          mv temp-changelog.md CHANGELOG.md
+          
+      - name: Create Pull Request for CHANGELOG
+        # Only run on 'published' event to avoid duplicate PRs
+        if: github.event.action == 'published'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ github.token }}
+          base: main
+          commit-message: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
+          title: "📝 Update CHANGELOG for ${{ github.event.release.tag_name }}"
+          body: |
+            This PR updates the CHANGELOG.md with the latest release notes for ${{ github.event.release.tag_name }}.
+            
+            ### Changes
+            - Added changelog entry for ${{ github.event.release.tag_name }}
+            - Updated with commit history since last release
+            
+            Auto-generated by the release workflow.
+          branch: changelog-update-${{ github.event.release.tag_name }}
+          delete-branch: true
+          labels: |
+            documentation
+            automated
