@@ -256,6 +256,9 @@ jobs:
           tail -n +5 CHANGELOG.md >> temp-changelog.md
           mv temp-changelog.md CHANGELOG.md
           
+          # Clean up temporary files
+          rm -f changelog.md new-entry.md
+          
       - name: Create Pull Request for CHANGELOG
         # Only run on 'published' event to avoid duplicate PRs
         if: github.event.action == 'published'
