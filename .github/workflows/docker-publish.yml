@@ -130,41 +130,5 @@ jobs:
           format: 'table'
           exit-code: '0'  # Don't fail the build on secrets
           
-  update-release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    permissions:
-      contents: write
-      
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Create Release Notes
-        run: |
-          echo "## Docker Images" > release-notes.md
-          echo "" >> release-notes.md
-          echo "### GitHub Container Registry" >> release-notes.md
-          echo "\`\`\`bash" >> release-notes.md
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> release-notes.md
-          echo "\`\`\`" >> release-notes.md
-          echo "" >> release-notes.md
-          echo "### Running the Container" >> release-notes.md
-          echo "\`\`\`bash" >> release-notes.md
-          echo "docker run -d \\" >> release-notes.md
-          echo "  --name coinbase-scheduler \\" >> release-notes.md
-          echo "  --env-file .env \\" >> release-notes.md
-          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> release-notes.md
-          echo "\`\`\`" >> release-notes.md
-          echo "" >> release-notes.md
-          echo "## Security" >> release-notes.md
-          echo "✅ This release has been scanned for vulnerabilities and secrets" >> release-notes.md
-          echo "✅ All dependencies are up to date" >> release-notes.md
-          
-      - name: Update Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          append_body: true
-          body_path: release-notes.md
+  # Release notes are now handled by the release-notes.yml workflow
+  # This job has been deprecated in favor of a dedicated changelog workflow

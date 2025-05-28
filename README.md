@@ -128,13 +128,52 @@ docker-compose logs -f
 - 📦 Dependencies are automatically updated via Dependabot
 - 🛡️ See [SECURITY.md](SECURITY.md) for our security policy
 
+## Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+### Commit Messages
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for clear and structured commit messages:
+
+```bash
+# Format: <type>(<scope>): <subject>
+
+# Examples:
+git commit -m "feat: add support for EUR trading pairs"
+git commit -m "fix: resolve connection timeout issues"
+git commit -m "docs: update configuration examples"
+git commit -m "chore: update dependencies"
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make your changes following the commit conventions
+4. Push to your fork: `git push origin feature/your-feature`
+5. Create a Pull Request
+
+### Releases
+
+When a new release is created:
+- Changelog is automatically generated from commit history
+- Docker images are built and pushed to GitHub Container Registry
+- Release notes include installation instructions and changes
+
 ## CI/CD
 
 This project uses GitHub Actions for continuous integration and deployment:
 
 - **On Push to main**: Builds and pushes Docker images with `main` tag
 - **On Pull Request**: Builds images for testing (no push)
-- **On Release**: Builds and pushes images with version tags and `latest`
+- **On Release**: 
+  - Builds and pushes images with version tags and `latest`
+  - Automatically generates changelog from commit history
+  - Updates release notes with Docker commands and quick start guide
+  - Creates pull request to update CHANGELOG.md
 
 All builds include:
 - Multi-architecture support (linux/amd64, linux/arm64)

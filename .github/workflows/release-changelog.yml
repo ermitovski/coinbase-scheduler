@@ -1,0 +1,140 @@
+name: Generate Release Changelog
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+          
+      - name: Get previous release tag
+        id: prev_tag
+        run: |
+          # Get all tags sorted by version
+          TAGS=$(git tag -l --sort=-version:refname)
+          
+          # Get the current tag
+          CURRENT_TAG="${{ github.event.release.tag_name }}"
+          
+          # Find the previous tag
+          PREV_TAG=""
+          FOUND_CURRENT=false
+          for tag in $TAGS; do
+            if [ "$FOUND_CURRENT" = true ]; then
+              PREV_TAG=$tag
+              break
+            fi
+            if [ "$tag" = "$CURRENT_TAG" ]; then
+              FOUND_CURRENT=true
+            fi
+          done
+          
+          # If no previous tag found, use the first commit
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          echo "previous_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+          
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG="${{ steps.prev_tag.outputs.previous_tag }}"
+          CURRENT_TAG="${{ github.event.release.tag_name }}"
+          
+          # Start changelog
+          echo "## What's Changed" > changelog.md
+          echo "" >> changelog.md
+          
+          # Get all commits between tags
+          COMMITS=$(git log $PREV_TAG..$CURRENT_TAG --pretty=format:"%h %s" --reverse)
+          
+          # Initialize categories
+          FEATURES=""
+          FIXES=""
+          DOCS=""
+          CHORES=""
+          OTHER=""
+          
+          # Parse commits by conventional commit format
+          while IFS= read -r commit; do
+            HASH=$(echo "$commit" | awk '{print $1}')
+            MESSAGE=$(echo "$commit" | cut -d' ' -f2-)
+            
+            # Create commit link
+            COMMIT_LINK="[\`$HASH\`](https://github.com/${{ github.repository }}/commit/$HASH)"
+            
+            if [[ "$MESSAGE" =~ ^feat(\(.*\))?:\ .* ]]; then
+              FEATURES="${FEATURES}- ${MESSAGE} ${COMMIT_LINK}\n"
+            elif [[ "$MESSAGE" =~ ^fix(\(.*\))?:\ .* ]]; then
+              FIXES="${FIXES}- ${MESSAGE} ${COMMIT_LINK}\n"
+            elif [[ "$MESSAGE" =~ ^docs(\(.*\))?:\ .* ]]; then
+              DOCS="${DOCS}- ${MESSAGE} ${COMMIT_LINK}\n"
+            elif [[ "$MESSAGE" =~ ^(chore|ci|build|test|style|refactor|perf)(\(.*\))?:\ .* ]]; then
+              CHORES="${CHORES}- ${MESSAGE} ${COMMIT_LINK}\n"
+            else
+              OTHER="${OTHER}- ${MESSAGE} ${COMMIT_LINK}\n"
+            fi
+          done <<< "$COMMITS"
+          
+          # Write categories to changelog
+          if [ -n "$FEATURES" ]; then
+            echo "### 🚀 Features" >> changelog.md
+            echo -e "$FEATURES" >> changelog.md
+          fi
+          
+          if [ -n "$FIXES" ]; then
+            echo "### 🐛 Bug Fixes" >> changelog.md
+            echo -e "$FIXES" >> changelog.md
+          fi
+          
+          if [ -n "$DOCS" ]; then
+            echo "### 📚 Documentation" >> changelog.md
+            echo -e "$DOCS" >> changelog.md
+          fi
+          
+          if [ -n "$CHORES" ]; then
+            echo "### 🔧 Maintenance" >> changelog.md
+            echo -e "$CHORES" >> changelog.md
+          fi
+          
+          if [ -n "$OTHER" ]; then
+            echo "### 📝 Other Changes" >> changelog.md
+            echo -e "$OTHER" >> changelog.md
+          fi
+          
+          # Add contributors section
+          echo "" >> changelog.md
+          echo "### 👥 Contributors" >> changelog.md
+          echo "" >> changelog.md
+          
+          # Get unique contributors
+          CONTRIBUTORS=$(git log $PREV_TAG..$CURRENT_TAG --pretty=format:"%an" | sort -u)
+          while IFS= read -r contributor; do
+            echo "- $contributor" >> changelog.md
+          done <<< "$CONTRIBUTORS"
+          
+          # Add full changelog link
+          echo "" >> changelog.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG" >> changelog.md
+          
+          # Output the changelog
+          cat changelog.md
+          
+      - name: Update release with changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          body_path: changelog.md
+          append_body: false  # Replace the body instead of appending

@@ -56,6 +56,60 @@ docker-compose down
 - Run tests: Currently no automated tests (consider adding pytest)
 - Lint/format: Consider adding ruff or black for Python formatting
 
+## Conventional Commits
+
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages. This enables automatic changelog generation and better commit history.
+
+### Commit Message Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation only changes
+- **style**: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+- **refactor**: A code change that neither fixes a bug nor adds a feature
+- **perf**: A code change that improves performance
+- **test**: Adding missing tests or correcting existing tests
+- **build**: Changes that affect the build system or external dependencies
+- **ci**: Changes to CI configuration files and scripts
+- **chore**: Other changes that don't modify src or test files
+- **revert**: Reverts a previous commit
+
+### Examples
+
+```bash
+# Feature
+git commit -m "feat: add weekly scheduling option"
+
+# Bug fix
+git commit -m "fix: resolve order status tracking issue"
+
+# Documentation
+git commit -m "docs: update README with new configuration options"
+
+# Breaking change (note the ! after type)
+git commit -m "feat!: change API authentication method"
+
+# Commit with scope
+git commit -m "feat(trading): implement market order support"
+
+# Commit with body
+git commit -m "fix: prevent duplicate orders
+
+- Add transaction ID tracking
+- Check for pending orders before placing new ones
+- Log all order attempts"
+```
+
 ## Architecture
 
 This is a cryptocurrency purchase automation tool for Coinbase using the Advanced Trade API. The codebase follows a modular structure:
@@ -143,7 +197,18 @@ The repository uses GitHub Actions for automated builds and deployments:
    - Create a new release on GitHub
    - Tag with semantic version (e.g., `v1.2.3`)
    - CI will automatically build, scan, and publish Docker images
-   - Release notes are automatically updated with Docker pull commands
+   - Release notes are automatically generated with:
+     - Changelog based on commit history
+     - Docker pull commands
+     - Quick start instructions
+     - Contributors list
+
+4. **Changelog Generation**:
+   - Automatic changelog creation on releases
+   - Parses conventional commits for better formatting
+   - Groups changes by type (features, fixes, etc.)
+   - Creates pull request to update CHANGELOG.md
+   - Updates release description with formatted notes
 
 ### Dependency Management
 

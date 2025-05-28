@@ -1,0 +1,105 @@
+name: Update Release Notes
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  update-release-notes:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Generate changelog using git-cliff
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: .github/cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+          
+      - name: Create release notes
+        run: |
+          # Start with the changelog
+          cat CHANGES.md > release-notes.md
+          echo "" >> release-notes.md
+          echo "---" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          # Add Docker information
+          echo "## 🐳 Docker Images" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### GitHub Container Registry" >> release-notes.md
+          echo '```bash' >> release-notes.md
+          echo "docker pull ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}" >> release-notes.md
+          echo '```' >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### Running the Container" >> release-notes.md
+          echo '```bash' >> release-notes.md
+          echo "docker run -d \\" >> release-notes.md
+          echo "  --name coinbase-scheduler \\" >> release-notes.md
+          echo "  --env-file .env \\" >> release-notes.md
+          echo "  ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}" >> release-notes.md
+          echo '```' >> release-notes.md
+          echo "" >> release-notes.md
+          
+          # Add what's included section
+          echo "## 📦 What's Included" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- ✅ Automated cryptocurrency purchases via Coinbase Advanced Trade API" >> release-notes.md
+          echo "- ✅ Daily, weekly, and monthly scheduling options" >> release-notes.md
+          echo "- ✅ Telegram notifications for all transactions" >> release-notes.md
+          echo "- ✅ Multi-architecture Docker images (amd64, arm64)" >> release-notes.md
+          echo "- ✅ Security scanned with Trivy" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          # Add links section
+          echo "## 🔗 Links" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- [Documentation](https://github.com/${{ github.repository }}#readme)" >> release-notes.md
+          echo "- [Configuration Guide](https://github.com/${{ github.repository }}#configuration)" >> release-notes.md
+          echo "- [Docker Hub (deprecated)](https://hub.docker.com/r/xavierh/coinbase-scheduler)" >> release-notes.md
+          
+      - name: Update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          body_path: release-notes.md
+          
+  create-changelog-pr:
+    needs: update-release-notes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Generate full changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/cliff.toml
+          args: --output CHANGELOG.md
+          
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
+          title: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
+          body: |
+            This PR updates the CHANGELOG.md file with the latest release notes.
+            
+            Generated automatically by the release workflow.
+          branch: changelog-${{ github.event.release.tag_name }}
+          delete-branch: true
