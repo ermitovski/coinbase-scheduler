@@ -2,7 +2,7 @@ name: Release Workflow
 
 on:
   release:
-    types: [published, created]  # Support both types
+    types: [published]
 
 env:
   REGISTRY: ghcr.io
@@ -229,8 +229,6 @@ jobs:
           append_body: false  # Replace the body instead of appending
           
       - name: Create or Update CHANGELOG.md
-        # Only run on 'published' event to avoid duplicate PRs
-        if: github.event.action == 'published'
         run: |
           # Check if CHANGELOG.md exists
           if [ ! -f CHANGELOG.md ]; then
@@ -260,8 +258,6 @@ jobs:
           rm -f changelog.md new-entry.md
           
       - name: Create Pull Request for CHANGELOG
-        # Only run on 'published' event to avoid duplicate PRs
-        if: github.event.action == 'published'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ github.token }}
