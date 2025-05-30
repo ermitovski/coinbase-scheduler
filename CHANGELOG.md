@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.4] - 2025-05-30
+
+## What's Changed
+
+### 🚀 Features
+- feat: add manual buy operations and configuration display [`5902e26`](https://github.com/ermitovski/coinbase-scheduler/commit/5902e26)
+
+### 🐛 Bug Fixes
+- fix: update system packages in Docker image to resolve security vulnerabilities [`f5697d0`](https://github.com/ermitovski/coinbase-scheduler/commit/f5697d0)
+
+### 📚 Documentation
+- docs: update CHANGELOG.md for v1.0.3 [`22716e9`](https://github.com/ermitovski/coinbase-scheduler/commit/22716e9)
+
+### 📝 Other Changes
+- Merge pull request #13 from ermitovski/changelog-update-v1.0.3 [`841ee06`](https://github.com/ermitovski/coinbase-scheduler/commit/841ee06)
+
+
+## 🐳 Docker Images
+
+Pull the latest image:
+```bash
+docker pull ghcr.io/ermitovski/coinbase-scheduler:v1.0.4
+docker pull ghcr.io/ermitovski/coinbase-scheduler:latest
+```
+
+Run with Docker Compose:
+```bash
+# Production deployment
+docker-compose -f docker-compose.prod.yml up -d
+
+# Development deployment
+docker-compose up -d
+```
+
+## 🚀 Quick Start
+
+```bash
+# Create your .env file
+cp .env.example .env
+
+# Edit your configuration
+nano .env
+
+# Run the scheduler
+docker run -d \
+  --name coinbase-scheduler \
+  --env-file .env \
+  ghcr.io/ermitovski/coinbase-scheduler:v1.0.4
+```
+
+## 👥 Contributors
+
+- @ermitovski
+- Xavi Esteve
+
+**Full Changelog**: https://github.com/ermitovski/coinbase-scheduler/compare/v1.0.3...v1.0.4
+
+---
+
 ## [v1.0.3] - 2025-05-28
 
 ## What's Changed
