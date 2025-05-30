@@ -91,6 +91,10 @@ def execute_buy(amount=None):
                 'last_checked': datetime.now(timezone.utc)
             }
             logger.info(f"Added order {transaction['order_id']} to pending orders monitoring")
+            
+            # Start the order check job if it's not already running
+            from coinbase_scheduler.scheduler import start_order_check_job
+            start_order_check_job()
         
         logger.info(f"Successfully placed buy order for {buy_amount} EUR of {config.PRODUCT_ID}")
         return transaction
@@ -249,6 +253,12 @@ def check_pending_orders():
         
     if checked_count > 0:
         logger.info(f"Checked {checked_count} orders, {len(orders_to_remove)} removed from monitoring")
+    
+    # If no more pending orders, stop the check job
+    if not pending_orders:
+        from coinbase_scheduler.scheduler import stop_order_check_job
+        stop_order_check_job()
+        logger.info("No more pending orders - stopping order check job")
         
     return checked_count
 

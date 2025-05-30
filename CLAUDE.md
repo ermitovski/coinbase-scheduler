@@ -4,16 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-### Setup virtual environment
+### Local Development Environment Setup
+
+#### Initial Setup
 ```bash
+# Clone the repository
+git clone https://github.com/ermitovski/coinbase-scheduler.git
+cd coinbase-scheduler
+
 # Create virtual environment
 python3 -m venv venv
 
 # Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# Install dependencies (use python -m pip to avoid system pip issues)
+python -m pip install -r requirements.txt
+
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+#### Working with the Virtual Environment
+```bash
+# Always activate the virtual environment before working
 source venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# To deactivate when done
+deactivate
+
+# If you encounter pip issues on macOS, use the venv's Python directly:
+./venv/bin/python -m pip install -r requirements.txt
 ```
 
 ### Running the scheduler

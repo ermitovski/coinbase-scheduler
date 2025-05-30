@@ -30,16 +30,56 @@ A simplified scheduler tool to execute recurring cryptocurrency purchases on Coi
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ermitovski/coinbase-scheduler.git
+   cd coinbase-scheduler
    ```
+
+2. Create and activate a Python virtual environment:
+   ```bash
+   # Create virtual environment
+   python3 -m venv venv
+   
+   # Activate virtual environment
+   # On macOS/Linux:
+   source venv/bin/activate
+   # On Windows:
+   # venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   # Using pip directly
    pip install -r requirements.txt
+   
+   # Or using python -m pip (recommended)
+   python -m pip install -r requirements.txt
    ```
-3. Copy the example environment file and configure it:
-   ```
+
+4. Copy the example environment file and configure it:
+   ```bash
    cp .env.example .env
    ```
-4. Edit the `.env` file with your Coinbase API credentials and preferred purchase settings
+
+5. Edit the `.env` file with your Coinbase API credentials and preferred purchase settings
+
+### Local Development Setup
+
+For development, always work within the virtual environment:
+
+```bash
+# Activate the virtual environment
+source venv/bin/activate
+
+# When done, deactivate it
+deactivate
+```
+
+If you encounter issues with pip on macOS, use the virtual environment's Python directly:
+```bash
+./venv/bin/python -m pip install -r requirements.txt
+```
 
 ## Configuration
 

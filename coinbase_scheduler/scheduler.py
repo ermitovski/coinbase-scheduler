@@ -68,14 +68,7 @@ def init_scheduler():
             replace_existing=True
         )
         
-        # Add a job to check pending orders every 15 minutes (for better responsiveness)
-        scheduler.add_job(
-            func=check_pending_orders,
-            trigger=CronTrigger(minute='0,15,30,45', timezone='UTC'),  # Run every 15 minutes
-            id='check_orders_job',
-            name='Check pending orders status',
-            replace_existing=True
-        )
+        # Don't add the check_orders_job here - it will be added dynamically when orders are placed
         
         # Start the scheduler
         scheduler.start()
@@ -87,7 +80,13 @@ def init_scheduler():
         else:  # monthly
             logger.info(f"Scheduler started: Monthly buy of {config.AMOUNT} EUR of {config.PRODUCT_ID} on day {config.MONTHLY_DAY} at {config.BUY_TIME} UTC")
         
-        logger.info("Order status checking job scheduled to run every 15 minutes")
+        logger.info("Order status checking will be scheduled dynamically when orders are placed")
+        
+        # Check if there are any pending orders from previous runs
+        from coinbase_scheduler.trading import get_pending_orders
+        if get_pending_orders():
+            logger.info(f"Found {len(get_pending_orders())} pending orders from previous run")
+            start_order_check_job()
     except Exception as e:
         logger.error(f"Failed to initialize scheduler: {str(e)}")
         raise
@@ -148,6 +147,38 @@ def get_next_check_time():
     except Exception as e:
         logger.error(f"Failed to get next check time: {str(e)}")
         return None
+
+def start_order_check_job():
+    """Start the job to check pending orders every 5 minutes"""
+    try:
+        # Check if job already exists
+        if scheduler.get_job('check_orders_job'):
+            logger.debug("Order check job already exists")
+            return
+            
+        # Add the job to check pending orders every 5 minutes
+        scheduler.add_job(
+            func=check_pending_orders,
+            trigger=CronTrigger(minute='*/5', timezone='UTC'),
+            id='check_orders_job',
+            name='Check pending orders status',
+            replace_existing=True
+        )
+        logger.info("Started order status checking job (every 5 minutes)")
+    except Exception as e:
+        logger.error(f"Failed to start order check job: {str(e)}")
+
+def stop_order_check_job():
+    """Stop the job that checks pending orders"""
+    try:
+        job = scheduler.get_job('check_orders_job')
+        if job:
+            scheduler.remove_job('check_orders_job')
+            logger.info("Stopped order status checking job")
+        else:
+            logger.debug("Order check job was not running")
+    except Exception as e:
+        logger.error(f"Failed to stop order check job: {str(e)}")
 
 def manual_buy(amount=None):
     """
